@@ -31,6 +31,8 @@
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
         <org.projectlombok.version>1.18.46</org.projectlombok.version>
         <org.testcontainers.version>1.21.3</org.testcontainers.version>
+        <sonar.organization>dmitryXdev</sonar.organization>
+        <sonar.projectKey>dmitryXdev_InnowiseCourcesUserService</sonar.projectKey>
     </properties>
 
     <dependencyManagement>

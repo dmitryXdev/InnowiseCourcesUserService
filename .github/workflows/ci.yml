@@ -37,7 +37,6 @@ jobs:
 
         run: |
           mvn sonar:sonar \
-            -Dsonar.projectKey=dmitryXdev_InnowiseCourcesUserService \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.login=$SONAR_TOKEN
           
