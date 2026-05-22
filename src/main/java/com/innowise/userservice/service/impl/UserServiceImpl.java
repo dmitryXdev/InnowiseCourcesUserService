@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found";
 
     @Override
     public Page<UserDto> getAllBySpecification(Specification<User> spec, Pageable pageable){
@@ -51,7 +52,7 @@ public class UserServiceImpl implements UserService {
     @Cacheable(value = "users", key = "#id")
     public UserDto getUserById(Long id) {
         return userMapper.toDto(userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found")));
+                .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE)));
     }
 
     @Override
@@ -62,7 +63,7 @@ public class UserServiceImpl implements UserService {
             throw new BadIncomeDataException("No data presented");
         }
 
-        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
         if(updateUserDto.getName() != null) {
             user.setName(updateUserDto.getName());
@@ -81,7 +82,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @CacheEvict(value = "users", key = "#id")
     public void setUserAccountStatus(Long id, boolean isActive) {
-        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
         user.setActive(isActive);
     }
 
@@ -89,7 +90,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @CacheEvict(value = "users", key = "#id")
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
         userRepository.delete(user);
     }
 }

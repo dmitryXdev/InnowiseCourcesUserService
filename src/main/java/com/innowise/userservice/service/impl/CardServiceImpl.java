@@ -24,6 +24,8 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final CardMapper cardMapper;
+    private static final String CARD_NOT_FOUND_MESSAGE = "Card not found";
+
 
     @Override
     @Transactional
@@ -50,7 +52,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public CardDto getCardById(Long id) {
-        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Card not found"));
+        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
         return cardMapper.toDto(card);
     }
 
@@ -65,7 +67,7 @@ public class CardServiceImpl implements CardService {
     @Override
     @Transactional
     public CardDto updateCardById(Long id, UpdateCardDto updateCardDto) {
-        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Card not found"));
+        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
 
         if(updateCardDto.getNumber() != null) {
             card.setNumber(updateCardDto.getNumber());
@@ -81,14 +83,14 @@ public class CardServiceImpl implements CardService {
     @Override
     @Transactional
     public void deleteCard(Long id) {
-        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Card not found"));
+        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
         cardRepository.delete(card);
     }
 
     @Override
     @Transactional
     public void setCardStatus(Long id, boolean isActive) {
-        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Card not found"));
+        Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
         card.setActive(isActive);
     }
 }

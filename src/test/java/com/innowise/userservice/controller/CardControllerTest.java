@@ -11,7 +11,6 @@ import com.innowise.userservice.dto.UpdateCardDto;
 import com.innowise.userservice.model.Card;
 import com.innowise.userservice.model.User;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestConfig.class)
-public class CardControllerTest {
+ class CardControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
