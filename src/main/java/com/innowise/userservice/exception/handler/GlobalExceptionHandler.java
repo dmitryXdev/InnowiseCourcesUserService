@@ -1,5 +1,6 @@
 package com.innowise.userservice.exception.handler;
 
+import com.innowise.userservice.exception.AccountIsNotActivatedException;
 import com.innowise.userservice.exception.BadIncomeDataException;
 import com.innowise.userservice.exception.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -47,5 +48,16 @@ public class GlobalExceptionHandler {
                                 .status(HttpStatus.BAD_REQUEST.value())
                                 .build()
                 );
+    }
+
+    @ExceptionHandler(AccountIsNotActivatedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ErrorResponse> accountIsNotActivated(AccountIsNotActivatedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN.value())
+                .body(
+                        ErrorResponse.builder()
+                        .message(e.getMessage())
+                        .status(HttpStatus.FORBIDDEN.value())
+                        .build());
     }
 }
