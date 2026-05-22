@@ -1,0 +1,270 @@
+package com.innowise.userservice.controller;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.innowise.userservice.config.TestConfig;
+import com.innowise.userservice.dao.CardRepository;
+import com.innowise.userservice.dao.UserRepository;
+import com.innowise.userservice.dto.CardDto;
+import com.innowise.userservice.dto.CreateCardDto;
+import com.innowise.userservice.dto.UpdateCardDto;
+import com.innowise.userservice.model.Card;
+import com.innowise.userservice.model.User;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@Testcontainers
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Import(TestConfig.class)
+public class CardControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private CardRepository cardRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private CacheManager redisTemplate;
+
+    private User addUserToDB() {
+        User user = new User();
+        user.setActive(true);
+        user.setName("John");
+        user.setSurname("Doe");
+        user.setEmail("some@email.com");
+        user.setBirthDate(LocalDate.of(1990, 1, 1));
+
+        return userRepository.save(user);
+    }
+
+    private CreateCardDto getCreateCardDto(Long userId, String number) {
+        CreateCardDto createCardDto = new CreateCardDto();
+        createCardDto.setHolder("INSTANT CARD");
+        createCardDto.setExpirationDate(LocalDate.now().plusDays(12L));
+        createCardDto.setNumber(number);
+        createCardDto.setUserId(userId);
+
+        return createCardDto;
+    }
+
+    @AfterEach
+    void clearDataBase() {
+        userRepository.deleteAll();
+        cardRepository.deleteAll();
+    }
+
+    @Test
+    void createCard_shouldCreateAndReturnCard() {
+        User user = addUserToDB();
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
+        try {
+            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(objectMapper.writeValueAsString(createCardDto)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            assertNotNull(cardDto);
+            assertEquals(createCardDto.getNumber(), cardDto.getNumber());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void getCardById_shouldReturnCardById() {
+        User user = addUserToDB();
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
+        try {
+            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(createCardDto)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            assertNotNull(cardDto);
+            assertEquals(createCardDto.getNumber(), cardDto.getNumber());
+
+            cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            assertNotNull(cardDto);
+            assertEquals(createCardDto.getNumber(), cardDto.getNumber());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void getAllByUserId_shouldReturnAllCardsByUserId() {
+        User user = addUserToDB();
+        CreateCardDto card1 = getCreateCardDto(user.getId(), "2342345342345435");
+        CreateCardDto card2 = getCreateCardDto(user.getId(), "2342341231332132");
+
+        try {
+            CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(card1)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(card2)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            assertNotNull(cardDto1);
+            assertNotNull(cardDto2);
+
+            List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/cards")
+                            .param("id", user.getId().toString()))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(), new TypeReference<List<CardDto>>() {});
+
+            assertNotNull(usersCards);
+            assertEquals(2, usersCards.size());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void updateCardById_shouldUpdateAndReturnCard() {
+        User user = addUserToDB();
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
+        try {
+            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(createCardDto)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            UpdateCardDto updateCardDto = new UpdateCardDto();
+            updateCardDto.setNumber("2342345342345435");
+
+            cardDto = objectMapper.readValue(mockMvc.perform(put("/cards/" + cardDto.getId())
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(objectMapper.writeValueAsString(updateCardDto)))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            assertNotNull(cardDto);
+            assertEquals(updateCardDto.getNumber(), cardDto.getNumber());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void deleteCard_shouldDeleteCard() {
+        User user = addUserToDB();
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
+
+        try {
+            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(createCardDto)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            mockMvc.perform(delete("/cards/" + cardDto.getId()))
+                    .andExpect(status().isOk());
+
+            Card card = cardRepository.findById(cardDto.getId()).orElse(null);
+
+            assertNull(card);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void activateCard_shouldChangeCardStatusToActive() {
+        User user = addUserToDB();
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
+        try {
+            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(createCardDto)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            Card card = cardRepository.findById(cardDto.getId()).orElse(null);
+            assertNotNull(card);
+            card.setActive(false);
+            cardRepository.save(card);
+
+            mockMvc.perform(patch("/cards/" + cardDto.getId() + "/activate"))
+                    .andExpect(status().isOk());
+
+            cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            assertTrue(cardDto.getActive());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void deactivateCard_shouldChangeCardStatusToNotActive() {
+        User user = addUserToDB();
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
+        try {
+            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(createCardDto)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            mockMvc.perform(patch("/cards/" + cardDto.getId() + "/deactivate"))
+                    .andExpect(status().isOk());
+
+            cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+            assertFalse(cardDto.getActive());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

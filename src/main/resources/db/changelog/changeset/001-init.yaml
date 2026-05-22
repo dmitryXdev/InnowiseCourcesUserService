@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-users-table
+      author: admin
+      changes:
+        - sqlFile:
+            path: sql/users-table.sql
+            relativeToChangelogFile: true
+        - sqlFile:
+            path: sql/payment-cards-table.sql
+            relativeToChangelogFile: true
+        - sqlFile:
+            path: sql/payment-cards-indexes.sql
+            relativeToChangelogFile: true
+        - sqlFile:
+            path: sql/users-table-indexes.sql
+            relativeToChangelogFile: true
