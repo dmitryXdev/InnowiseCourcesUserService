@@ -86,184 +86,157 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     }
 
     @Test
-    void createCard_shouldCreateAndReturnCard() {
+    void createCard_shouldCreateAndReturnCard() throws Exception {
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
-        try {
-            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
-                    .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .content(objectMapper.writeValueAsString(createCardDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            assertNotNull(cardDto);
-            assertEquals(createCardDto.getNumber(), cardDto.getNumber());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+        assertNotNull(cardDto);
+        assertEquals(createCardDto.getNumber(), cardDto.getNumber());
     }
 
     @Test
-    void getCardById_shouldReturnCardById() {
+    void getCardById_shouldReturnCardById() throws Exception {
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
-        try {
-            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createCardDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            assertNotNull(cardDto);
-            assertEquals(createCardDto.getNumber(), cardDto.getNumber());
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+        assertNotNull(cardDto);
+        assertEquals(createCardDto.getNumber(), cardDto.getNumber());
 
-            assertNotNull(cardDto);
-            assertEquals(createCardDto.getNumber(), cardDto.getNumber());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
+        assertNotNull(cardDto);
+        assertEquals(createCardDto.getNumber(), cardDto.getNumber());
     }
 
     @Test
-    void getAllByUserId_shouldReturnAllCardsByUserId() {
+    void getAllByUserId_shouldReturnAllCardsByUserId() throws Exception {
         User user = addUserToDB();
         CreateCardDto card1 = getCreateCardDto(user.getId(), "2342345342345435");
         CreateCardDto card2 = getCreateCardDto(user.getId(), "2342341231332132");
 
-        try {
-            CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/cards")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(card1)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+        CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(card1)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/cards")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(card2)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+        CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(card2)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            assertNotNull(cardDto1);
-            assertNotNull(cardDto2);
+        assertNotNull(cardDto1);
+        assertNotNull(cardDto2);
 
-            List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/cards")
-                            .param("id", user.getId().toString()))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), new TypeReference<List<CardDto>>() {});
+        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/users/" + user.getId() + "/cards"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), new TypeReference<>() {});
 
-            assertNotNull(usersCards);
-            assertEquals(2, usersCards.size());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertNotNull(usersCards);
+        assertEquals(2, usersCards.size());
     }
 
     @Test
-    void updateCardById_shouldUpdateAndReturnCard() {
+    void updateCardById_shouldUpdateAndReturnCard() throws Exception {
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
-        try {
-            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createCardDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            UpdateCardDto updateCardDto = new UpdateCardDto();
-            updateCardDto.setNumber("2342345342345435");
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            cardDto = objectMapper.readValue(mockMvc.perform(put("/cards/" + cardDto.getId())
-                    .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .content(objectMapper.writeValueAsString(updateCardDto)))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+        UpdateCardDto updateCardDto = new UpdateCardDto();
+        updateCardDto.setNumber("2342345342345435");
 
-            assertNotNull(cardDto);
-            assertEquals(updateCardDto.getNumber(), cardDto.getNumber());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        cardDto = objectMapper.readValue(mockMvc.perform(put("/cards/" + cardDto.getId())
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(updateCardDto)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+        assertNotNull(cardDto);
+        assertEquals(updateCardDto.getNumber(), cardDto.getNumber());
     }
 
     @Test
-    void deleteCard_shouldDeleteCard() {
+    void deleteCard_shouldDeleteCard() throws Exception {
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
-        try {
-            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createCardDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            mockMvc.perform(delete("/cards/" + cardDto.getId()))
-                    .andExpect(status().isOk());
+        mockMvc.perform(delete("/cards/" + cardDto.getId()))
+                .andExpect(status().isNoContent());
 
-            Card card = cardRepository.findById(cardDto.getId()).orElse(null);
+        Card card = cardRepository.findById(cardDto.getId()).orElse(null);
 
-            assertNull(card);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertNull(card);
     }
 
     @Test
-    void activateCard_shouldChangeCardStatusToActive() {
+    void activateCard_shouldChangeCardStatusToActive() throws Exception {
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
-        try {
-            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createCardDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            Card card = cardRepository.findById(cardDto.getId()).orElse(null);
-            assertNotNull(card);
-            card.setActive(false);
-            cardRepository.save(card);
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            mockMvc.perform(patch("/cards/" + cardDto.getId() + "/activate"))
-                    .andExpect(status().isOk());
+        Card card = cardRepository.findById(cardDto.getId()).orElse(null);
+        assertNotNull(card);
+        card.setActive(false);
+        cardRepository.save(card);
 
-            cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/activate"))
+                .andExpect(status().isNoContent());
 
-            assertTrue(cardDto.getActive());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+        assertTrue(cardDto.getActive());
     }
 
     @Test
-    void deactivateCard_shouldChangeCardStatusToNotActive() {
+    void deactivateCard_shouldChangeCardStatusToNotActive() throws Exception {
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
-        try {
-            CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createCardDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            mockMvc.perform(patch("/cards/" + cardDto.getId() + "/deactivate"))
-                    .andExpect(status().isOk());
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), CardDto.class);
+        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/deactivate"))
+                .andExpect(status().isNoContent());
 
-            assertFalse(cardDto.getActive());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
+
+        assertFalse(cardDto.getActive());
     }
 }

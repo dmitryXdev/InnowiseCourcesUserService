@@ -1,9 +1,13 @@
 package com.innowise.userservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.userservice.config.TestConfig;
 import com.innowise.userservice.dao.UserRepository;
+import com.innowise.userservice.dto.CardDto;
+import com.innowise.userservice.dto.CreateCardDto;
 import com.innowise.userservice.dto.CreateUserDto;
 import com.innowise.userservice.dto.UpdateUserDto;
 import com.innowise.userservice.dto.UserDto;
@@ -80,232 +84,249 @@ class UserControllerTest {
     }
 
     @Test
-     void saveUser_shouldSaveAndReturnUser() {
+     void saveUser_shouldSaveAndReturnUser() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
 
-        try {
-            UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createUserDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            List<User> users = userRepository.findAll();
-            assertEquals(1, users.size());
-            assertEquals(userDto.getName(), users.get(0).getName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        List<User> users = userRepository.findAll();
+        assertEquals(1, users.size());
+        assertEquals(userDto.getName(), users.get(0).getName());
+
     }
 
     @Test
-     void gertUserById_shouldCacheAndReturnUserById() {
+     void gertUserById_shouldCacheAndReturnUserById() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
-        try {
-            mockMvc.perform(post("/users")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createUserDto)))
-                    .andExpect(status().isCreated());
 
-            Long id = userRepository.findAll().get(0).getId();
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated());
 
-            UserDto userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + id))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
+        Long id = userRepository.findAll().get(0).getId();
 
-            assertNotNull(userDto);
-            assertEquals(userDto.getId(), id);
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + id))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            userRepository.deleteById(id);
+        assertNotNull(userDto);
+        assertEquals(userDto.getId(), id);
 
-            UserDto cachedUserDto = objectMapper.readValue(mockMvc.perform(get("/users/" + id)
-                            .contentType(MediaType.APPLICATION_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
+        userRepository.deleteById(id);
 
-            assertNotNull(cachedUserDto);
-            assertEquals(cachedUserDto, userDto);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        UserDto cachedUserDto = objectMapper.readValue(mockMvc.perform(get("/users/" + id)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
+
+        assertNotNull(cachedUserDto);
+        assertEquals(cachedUserDto, userDto);
     }
 
     @Test
-     void updateUser_shouldUpdateAndReturnUser() {
+     void updateUser_shouldUpdateAndReturnUser() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
-        try {
-            UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createUserDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            UpdateUserDto updateUserDto = new UpdateUserDto();
-            updateUserDto.setName("Johny");
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            UserDto updatedUserDto = objectMapper.readValue(mockMvc.perform(put("/users/" + userDto.getId())
-                    .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .content(objectMapper.writeValueAsString(updateUserDto)))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
+        UpdateUserDto updateUserDto = new UpdateUserDto();
+        updateUserDto.setName("Johny");
 
-            User user = userRepository.findById(userDto.getId()).orElse(null);
+        UserDto updatedUserDto = objectMapper.readValue(mockMvc.perform(put("/users/" + userDto.getId())
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(updateUserDto)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            assertNotNull(user);
-            assertEquals("Johny", user.getName());
-            assertEquals("Johny", updatedUserDto.getName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        User user = userRepository.findById(userDto.getId()).orElse(null);
+
+        assertNotNull(user);
+        assertEquals("Johny", user.getName());
+        assertEquals("Johny", updatedUserDto.getName());
     }
 
     @Test
-     void deleteUser_shouldDeleteUser() {
+     void deleteUser_shouldDeleteUser() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
-        try {
-            UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createUserDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            User user = userRepository.findById(userDto.getId()).orElse(null);
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            assertNotNull(user);
+        User user = userRepository.findById(userDto.getId()).orElse(null);
 
-            mockMvc.perform(delete("/users/" + userDto.getId()))
-                    .andExpect(status().isOk());
+        assertNotNull(user);
 
-            user = userRepository.findById(userDto.getId()).orElse(null);
-            assertNull(user);
+        mockMvc.perform(delete("/users/" + userDto.getId()))
+                .andExpect(status().isNoContent());
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        user = userRepository.findById(userDto.getId()).orElse(null);
+        assertNull(user);
     }
 
     @Test
-     void deleteUser_shouldEraseCache() {
+     void deleteUser_shouldEraseCache() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
-        try {
-            UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createUserDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            mockMvc.perform(get("/users/" + userDto.getId()))
-                    .andExpect(status().isOk());
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            UserDto cachedUser = (UserDto) redisTemplate.getCache("users").get(userDto.getId()).get();
+        mockMvc.perform(get("/users/" + userDto.getId()))
+                .andExpect(status().isOk());
 
-            assertNotNull(cachedUser);
+        UserDto cachedUser = (UserDto) redisTemplate.getCache("users").get(userDto.getId()).get();
 
-            mockMvc.perform(delete("/users/" + userDto.getId()))
-                    .andExpect(status().isOk());
+        assertNotNull(cachedUser);
 
-            assertNull(redisTemplate.getCache("users").get(userDto.getId()));
+        mockMvc.perform(delete("/users/" + userDto.getId()))
+                .andExpect(status().isNoContent());
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertNull(redisTemplate.getCache("users").get(userDto.getId()));
     }
 
     @Test
-     void activateAccount_shouldMakeAccountActive() {
+    void getAllCardsByUserId_shouldReturnAllCardsByUserId() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
-        try {
-            UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createUserDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            assertNotNull(userDto);
-            assertTrue(userDto.getActive());
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate"))
-                    .andExpect(status().isOk());
+        CreateCardDto card1 = new CreateCardDto();
+        card1.setHolder("INSTANT CARD");
+        card1.setExpirationDate(LocalDate.now().plusDays(12L));
+        card1.setNumber("2342345342345435");
+        card1.setUserId(userDto.getId());
 
-            userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
+        CreateCardDto card2 = new CreateCardDto();
+        card2.setHolder("INSTANT CARD");
+        card2.setExpirationDate(LocalDate.now().plusDays(12L));
+        card2.setNumber("2342341231332132");
+        card2.setUserId(userDto.getId());
 
-            assertFalse(userDto.getActive());
 
-            mockMvc.perform(patch("/users/" + userDto.getId() + "/activate"))
-                    .andExpect(status().isOk());
+        CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(card1)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
+        CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(card2)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-            assertTrue(userDto.getActive());
+        assertNotNull(cardDto1);
+        assertNotNull(cardDto2);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId() + "/cards"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), new TypeReference<>() {});
+
+        assertNotNull(usersCards);
+        assertEquals(2, usersCards.size());
     }
 
     @Test
-     void deactivateAccount_shouldMakeAccountNotActive() {
+     void activateAccount_shouldMakeAccountActive() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
-        try {
-            UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(objectMapper.writeValueAsString(createUserDto)))
-                    .andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            assertNotNull(userDto);
-            assertTrue(userDto.getActive());
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-            mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate"))
-                    .andExpect(status().isOk());
+        assertNotNull(userDto);
+        assertTrue(userDto.getActive());
 
-            userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), UserDto.class);
+        mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate"))
+                .andExpect(status().isNoContent());
 
-            assertFalse(userDto.getActive());
+        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertFalse(userDto.getActive());
+
+        mockMvc.perform(patch("/users/" + userDto.getId() + "/activate"))
+                .andExpect(status().isNoContent());
+
+        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
+
+        assertTrue(userDto.getActive());
     }
 
     @Test
-     void getAllBySpecification_shouldReturnUsersByFilter() {
+     void deactivateAccount_shouldMakeAccountNotActive() throws Exception {
+        CreateUserDto createUserDto = getCreateUserDto();
+
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
+
+        assertNotNull(userDto);
+        assertTrue(userDto.getActive());
+
+        mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate"))
+                .andExpect(status().isNoContent());
+
+        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), UserDto.class);
+
+        assertFalse(userDto.getActive());
+    }
+
+    @Test
+     void getAllBySpecification_shouldReturnUsersByFilter() throws Exception {
         List<CreateUserDto> createUserDtos = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             createUserDtos.add(getCreateUserDto());
         }
 
-        try {
-            for (CreateUserDto createUserDto : createUserDtos) {
-                mockMvc.perform(post("/users")
-                                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createUserDto)))
-                        .andExpect(status().isCreated())
-                        .andReturn().getResponse().getContentAsString();
-            }
+        for (CreateUserDto createUserDto : createUserDtos) {
+            mockMvc.perform(post("/users")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(createUserDto)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString();
+        }
 
-            String name = userRepository.findAll().get(0).getName();
+        String name = userRepository.findAll().get(0).getName();
 
-            JavaType type = objectMapper.getTypeFactory()
-                    .constructParametricType(PageResponse.class, UserDto.class);
+        JavaType type = objectMapper.getTypeFactory()
+                .constructParametricType(PageResponse.class, UserDto.class);
 
-            PageResponse<UserDto> page = objectMapper.readValue(mockMvc.perform(get("/users")
-                            .param("name", name))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString(), type);
+        PageResponse<UserDto> page = objectMapper.readValue(mockMvc.perform(get("/users")
+                        .param("name", name))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), type);
 
-            List<UserDto> userDtos = page.getContent();
-            for (UserDto userDto : userDtos) {
-                assertEquals(name, userDto.getName());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        List<UserDto> userDtos = page.getContent();
+        for (UserDto userDto : userDtos) {
+            assertEquals(name, userDto.getName());
         }
     }
 }

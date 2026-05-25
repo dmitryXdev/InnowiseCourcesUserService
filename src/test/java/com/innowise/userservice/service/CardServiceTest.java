@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,13 +39,16 @@ import static org.mockito.Mockito.when;
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CacheManager cacheManager;
+
     private final CardMapper cardMapper = Mappers.getMapper(CardMapper.class);
 
     private CardServiceImpl cardService;
 
     @BeforeEach
     void setUp() {
-        cardService = new CardServiceImpl(cardRepository, userRepository, cardMapper);
+        cardService = new CardServiceImpl(cardRepository, userRepository, cardMapper, cacheManager);
     }
 
     private Card getCard(Long id) {
@@ -101,9 +107,10 @@ import static org.mockito.Mockito.when;
 
         user.setCards(cards);
 
-        when(userRepository.findById(0L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(any(Long.class))).thenReturn(Optional.of(user));
+        when(cardRepository.findAllByUserId(any(Long.class))).thenReturn(cards);
 
-        List<CardDto> cardDtos = cardService.getAllByUserId(user.getId());
+        List<CardDto> cardDtos = cardService.getAllByUserId(0L);
 
         assertNotNull(cardDtos);
         assertEquals(2, cardDtos.size());
@@ -126,8 +133,14 @@ import static org.mockito.Mockito.when;
 
     @Test
     void deleteCard_shouldDeleteCardById() {
+        User user = new User();
+        user.setId(0L);
         Card card = getCard(0L);
+        card.setUser(user);
 
+        Cache cache = mock(Cache.class);
+
+        when(cacheManager.getCache(any(String.class))).thenReturn(cache);
         when(cardRepository.findById(0L)).thenReturn(Optional.of(card));
 
         cardService.deleteCard(card.getId());
@@ -137,8 +150,14 @@ import static org.mockito.Mockito.when;
 
     @Test
     void setCardStatus_shouldChangeCardStatusByCardId() {
+        User user = new User();
+        user.setId(0L);
         Card card = getCard(0L);
+        card.setUser(user);
 
+        Cache cache = mock(Cache.class);
+
+        when(cacheManager.getCache(any(String.class))).thenReturn(cache);
         when(cardRepository.findById(0L)).thenReturn(Optional.of(card));
 
         cardService.setCardStatus(card.getId(), false);

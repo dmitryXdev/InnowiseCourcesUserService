@@ -66,14 +66,11 @@ class UserServiceTest {
         for (int i = 0; i < 5; i++) {
             users.add(getUser(Long.valueOf(String.valueOf(i))));
         }
-        Specification<User> specification = Specification.where(UserSpecification.hasName("John"));
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("name"));
-
         Page<User> page = new PageImpl<>(users);
 
-        when(userRepository.findAll(specification, pageable)).thenReturn(page);
+        when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        Page<UserDto> result = userService.getAllBySpecification(specification, pageable);
+        Page<UserDto> result = userService.getAllBySpecification("John", null,0, 10, "name");
 
         assertNotNull(result);
         assertNotNull(result.getContent());
@@ -88,10 +85,11 @@ class UserServiceTest {
     void saveUser_shouldSaveAndReturnUser() {
         User user = getUser(0L);
 
+        when(userRepository.findUserByEmail(any(String.class))).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(user);
 
         CreateUserDto createUserDto = new CreateUserDto();
-        createUserDto.setSurname(user.getName());
+        createUserDto.setName(user.getName());
         createUserDto.setSurname(user.getSurname());
         createUserDto.setEmail(user.getEmail());
         createUserDto.setBirthDate(user.getBirthDate());

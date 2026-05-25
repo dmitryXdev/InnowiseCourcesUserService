@@ -13,6 +13,8 @@ import com.innowise.userservice.model.Card;
 import com.innowise.userservice.model.User;
 import com.innowise.userservice.service.CardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +26,13 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final CardMapper cardMapper;
-    private static final String CARD_NOT_FOUND_MESSAGE = "Card not found";
+    private final CacheManager cacheManager;
 
+    private static final String CARD_NOT_FOUND_MESSAGE = "Card not found";
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#createCardDto.userId")
     public CardDto createCard(CreateCardDto createCardDto) {
         User user = userRepository.findById(createCardDto.getUserId()).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
@@ -36,7 +40,7 @@ public class CardServiceImpl implements CardService {
             throw new AccountIsNotActivatedException("User account is not activated");
         }
 
-        if(user.getCards() != null && user.getCards().size() > 5) {
+        if(user.getCards() != null && user.getCards().size() >= 5) {
             throw new BadIncomeDataException("User can not have more than 5 cards");
         }
 
@@ -58,7 +62,9 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public List<CardDto> getAllByUserId(Long id) {
-        List<Card> cards = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("No such user")).getCards();
+        userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        List<Card> cards = cardRepository.findAllByUserId(id);
         return cards.stream()
                 .map(cardMapper::toDto)
                 .toList();
@@ -66,6 +72,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#result.userId")
     public CardDto updateCardById(Long id, UpdateCardDto updateCardDto) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
 
@@ -85,6 +92,8 @@ public class CardServiceImpl implements CardService {
     public void deleteCard(Long id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
         cardRepository.delete(card);
+        cacheManager.getCache("users")
+                .evict(card.getUser().getId());
     }
 
     @Override
@@ -92,5 +101,7 @@ public class CardServiceImpl implements CardService {
     public void setCardStatus(Long id, boolean isActive) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
         card.setActive(isActive);
+        cacheManager.getCache("users")
+                .evict(card.getUser().getId());
     }
 }

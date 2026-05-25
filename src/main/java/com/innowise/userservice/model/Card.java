@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,6 +23,10 @@ import java.time.LocalDateTime;
 @Entity
 @Data
 @EntityListeners(AuditingEntityListener.class)
+@NamedQuery(
+        name = "Card.findAllByUserId",
+        query = "SELECT c from Card c JOIN FETCH c.user where c.user.id = :id"
+)
 public class Card {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -28,7 +28,7 @@ public class CardController {
     private final CardService cardService;
 
     @PostMapping
-    public ResponseEntity<CardDto> createCard(@RequestBody CreateCardDto createCardDto)  {
+    public ResponseEntity<CardDto> createCard(@RequestBody @Valid CreateCardDto createCardDto)  {
         return ResponseEntity.status(HttpStatus.CREATED).body(cardService.createCard(createCardDto));
     }
 
@@ -37,31 +37,26 @@ public class CardController {
         return ResponseEntity.ok(cardService.getCardById(id));
     }
 
-    @GetMapping
-    public ResponseEntity<List<CardDto>> getAllByUserId(@RequestParam Long id) {
-        return ResponseEntity.ok(cardService.getAllByUserId(id));
-    }
-
     @PutMapping("/{id}")
     public ResponseEntity<CardDto> updateCardById(@PathVariable Long id, @RequestBody @Valid UpdateCardDto updateCardDto) {
         return ResponseEntity.ok(cardService.updateCardById(id, updateCardDto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteCard(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
         cardService.deleteCard(id);
-        return ResponseEntity.ok("Card successfully deleted");
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/activate")
     public ResponseEntity<String> activateCard(@PathVariable Long id) {
         cardService.setCardStatus(id, true);
-        return ResponseEntity.ok("Card activated");
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<String> deactivateCard(@PathVariable Long id) {
         cardService.setCardStatus(id, false);
-        return ResponseEntity.ok("Card deactivated");
+        return ResponseEntity.noContent().build();
     }
 }

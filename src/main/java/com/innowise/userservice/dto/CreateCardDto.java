@@ -14,9 +14,9 @@ public class CreateCardDto {
     @Pattern(regexp = "^[23456]\\d{15}$")
     private String number;
     @NotBlank
-    @Pattern(regexp = "^[A-Z]+\s[A-Z]+$")
+    @Pattern(regexp = "^[A-Z]+\\s[A-Z]+$")
     private String holder;
-    @NotBlank
+    @NotNull
     private Long userId;
     @NotNull
     @Future

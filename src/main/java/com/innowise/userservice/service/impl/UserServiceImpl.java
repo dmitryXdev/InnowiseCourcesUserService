@@ -9,11 +9,14 @@ import com.innowise.userservice.exception.EntityNotFoundException;
 import com.innowise.userservice.mapper.UserMapper;
 import com.innowise.userservice.model.User;
 import com.innowise.userservice.service.UserService;
+import com.innowise.userservice.specification.UserSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +26,27 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+
     private static final String USER_NOT_FOUND_MESSAGE = "User not found";
 
     @Override
-    public Page<UserDto> getAllBySpecification(Specification<User> spec, Pageable pageable){
-        return userRepository.findAll(spec, pageable).map(userMapper::toDto);
+    public Page<UserDto> getAllBySpecification(String name, String surname, int page, int size, String sortBy){
+        Specification<User> specification = null;
+
+        if(name != null) {
+            specification = Specification.where(UserSpecification.hasName(name));
+        }
+        if(surname != null) {
+            if(specification == null) {
+                specification = Specification.where(UserSpecification.hasSurname(surname));
+            } else {
+                specification = specification.and(UserSpecification.hasSurname(surname));
+            }
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+
+        return userRepository.findAll(specification, pageable).map(userMapper::toDto);
     }
 
     @Override
