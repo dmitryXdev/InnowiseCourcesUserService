@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: create-users-table
+      id: create-tables
       author: admin
       changes:
         - sqlFile:

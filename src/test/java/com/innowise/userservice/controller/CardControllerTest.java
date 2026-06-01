@@ -7,18 +7,26 @@ import com.innowise.userservice.dao.CardRepository;
 import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateCardDto;
+import com.innowise.userservice.dto.TokenValidationResponseDto;
 import com.innowise.userservice.dto.UpdateCardDto;
+import com.innowise.userservice.feign.AuthClient;
+import com.innowise.userservice.httpfilter.JwtAuthFilter;
 import com.innowise.userservice.model.Card;
 import com.innowise.userservice.model.User;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -30,21 +38,30 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Testcontainers
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestConfig.class)
+@ExtendWith(MockitoExtension.class)
  class CardControllerTest {
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private AuthClient authClient;
+
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
 
     @Autowired
     private CardRepository cardRepository;
@@ -57,6 +74,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
     @Autowired
     private CacheManager redisTemplate;
+
+    private static final String token = "Bearer asfdlkashjlfkasdlkas";
+
+    @BeforeEach
+    void setUpFeignClient() {
+        TokenValidationResponseDto dto = TokenValidationResponseDto.builder()
+                .role("ADMIN")
+                .valid(true)
+                .userId(null)
+                .build();
+
+        when(authClient.validate(any())).thenReturn(dto);
+    }
 
     private User addUserToDB() {
         User user = new User();
@@ -91,6 +121,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
 
         CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
@@ -106,6 +137,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
 
         CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
@@ -114,9 +146,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         assertNotNull(cardDto);
         assertEquals(createCardDto.getNumber(), cardDto.getNumber());
 
-        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
+
         assertNotNull(cardDto);
         assertEquals(createCardDto.getNumber(), cardDto.getNumber());
     }
@@ -128,12 +162,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CreateCardDto card2 = getCreateCardDto(user.getId(), "2342341231332132");
 
         CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(card1)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
         CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(card2)))
                 .andExpect(status().isCreated())
@@ -142,7 +178,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         assertNotNull(cardDto1);
         assertNotNull(cardDto2);
 
-        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/users/" + user.getId() + "/cards"))
+        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/users/" + user.getId() + "/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), new TypeReference<>() {});
 
@@ -156,6 +193,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
         CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
@@ -165,6 +203,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         updateCardDto.setNumber("2342345342345435");
 
         cardDto = objectMapper.readValue(mockMvc.perform(put("/cards/" + cardDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(updateCardDto)))
                 .andExpect(status().isOk())
@@ -180,12 +219,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
         CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-        mockMvc.perform(delete("/cards/" + cardDto.getId()))
+        mockMvc.perform(delete("/cards/" + cardDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
         Card card = cardRepository.findById(cardDto.getId()).orElse(null);
@@ -199,6 +240,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
         CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
@@ -209,10 +251,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         card.setActive(false);
         cardRepository.save(card);
 
-        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/activate"))
+        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/activate")
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
-        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
@@ -225,15 +269,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
         CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/deactivate"))
+        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/deactivate")
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
-        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId()))
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 

@@ -5,7 +5,7 @@ CREATE TABLE payment_cards(
     holder varchar(255) not null,
     expiration_date date not null,
     active boolean not null,
-    created_at date not null,
-    updated_at date,
+    created_at timestamp not null,
+    updated_at timestamp,
     foreign key (user_id) references users(id)
 )

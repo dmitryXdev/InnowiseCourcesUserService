@@ -4,18 +4,14 @@ import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateUserDto;
 import com.innowise.userservice.dto.UpdateUserDto;
 import com.innowise.userservice.dto.UserDto;
-import com.innowise.userservice.model.User;
 import com.innowise.userservice.service.CardService;
 import com.innowise.userservice.service.UserService;
-import com.innowise.userservice.specification.UserSpecification;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,6 +32,7 @@ public class UserController {
     private final UserService userService;
     private final CardService cardService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<UserDto>> getAllBySpecification(@RequestParam(required = false) String name,
                                                 @RequestParam(required = false) String surname,
@@ -51,33 +48,39 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveUser(createUserDto));
     }
 
-    @GetMapping("/{userId}/cards")
-    public ResponseEntity<List<CardDto>> getAllCardsByUserId(@PathVariable Long userId) {
-        return ResponseEntity.ok(cardService.getAllByUserId(userId));
+    @PreAuthorize("hasRole('ADMIN') || #userId == authentication.principal.id")
+    @GetMapping("/{id}/cards")
+    public ResponseEntity<List<CardDto>> getAllCardsByUserId(@PathVariable Long id) {
+        return ResponseEntity.ok(cardService.getAllByUserId(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN') || #id == authentication.principal.id")
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN') || #id == authentication.principal.id")
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody @Valid UpdateUserDto updateUserDto) {
         return ResponseEntity.ok(userService.updateUserById(id, updateUserDto));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/activate")
     public ResponseEntity<String> activateAccount(@PathVariable Long id) {
         userService.setUserAccountStatus(id, true);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<String> deactivateAccount(@PathVariable Long id) {
         userService.setUserAccountStatus(id, false);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUserById(@PathVariable Long id) {
         userService.deleteUser(id);

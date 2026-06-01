@@ -5,6 +5,6 @@ CREATE TABLE users(
     birth_date date,
     email varchar(255) unique not null,
     active boolean not null,
-    created_at date not null,
-    updated_at date
+    created_at timestamp not null,
+    updated_at timestamp
 )

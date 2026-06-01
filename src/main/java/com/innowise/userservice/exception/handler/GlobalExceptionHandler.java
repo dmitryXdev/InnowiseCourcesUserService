@@ -1,5 +1,6 @@
 package com.innowise.userservice.exception.handler;
 
+import com.innowise.userservice.exception.AccessDeniedException;
 import com.innowise.userservice.exception.AccountIsNotActivatedException;
 import com.innowise.userservice.exception.BadIncomeDataException;
 import com.innowise.userservice.exception.EntityNotFoundException;
@@ -64,6 +65,17 @@ public class GlobalExceptionHandler {
                         ErrorResponse.builder()
                                 .message(e.getMessage())
                                 .status(HttpStatus.BAD_REQUEST.value())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> badIncomeData(AccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
+                .body(
+                        ErrorResponse.builder()
+                                .message(e.getMessage())
+                                .status(HttpStatus.FORBIDDEN.value())
                                 .build()
                 );
     }

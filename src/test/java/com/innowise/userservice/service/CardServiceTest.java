@@ -5,6 +5,7 @@ import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateCardDto;
 import com.innowise.userservice.dto.UpdateCardDto;
+import com.innowise.userservice.httpfilter.UserPrincipal;
 import com.innowise.userservice.mapper.CardMapper;
 import com.innowise.userservice.model.Card;
 import com.innowise.userservice.model.User;
@@ -79,7 +80,9 @@ import static org.mockito.Mockito.when;
         createCardDto.setNumber(card.getNumber());
         createCardDto.setExpirationDate(card.getExpirationDate());
 
-        CardDto cardDto = cardService.createCard(createCardDto);
+        UserPrincipal principal = new UserPrincipal(user.getId(), "ADMIN");
+
+        CardDto cardDto = cardService.createCard(createCardDto, principal);
 
         assertNotNull(cardDto);
         assertEquals(createCardDto.getNumber(), cardDto.getNumber());
@@ -90,7 +93,13 @@ import static org.mockito.Mockito.when;
         Card card = getCard(0L);
         when(cardRepository.findById(0L)).thenReturn(Optional.of(card));
 
-        CardDto cardDto = cardService.getCardById(card.getId());
+        User user = new User();
+        user.setId(0L);
+        card.setUser(user);
+
+        UserPrincipal principal = new UserPrincipal(user.getId(), "ADMIN");
+
+        CardDto cardDto = cardService.getCardById(card.getId(), principal);
 
         assertNotNull(cardDto);
         assertEquals(card.getNumber(), cardDto.getNumber());
@@ -138,12 +147,14 @@ import static org.mockito.Mockito.when;
         Card card = getCard(0L);
         card.setUser(user);
 
+        UserPrincipal userPrincipal = new UserPrincipal(user.getId(), "ADMIN");
+
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(any(String.class))).thenReturn(cache);
         when(cardRepository.findById(0L)).thenReturn(Optional.of(card));
 
-        cardService.deleteCard(card.getId());
+        cardService.deleteCard(card.getId(), userPrincipal);
 
         verify(cardRepository, times(1)).delete(any(Card.class));
     }

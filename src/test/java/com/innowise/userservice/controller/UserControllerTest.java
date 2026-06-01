@@ -1,6 +1,5 @@
 package com.innowise.userservice.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,19 +8,25 @@ import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateCardDto;
 import com.innowise.userservice.dto.CreateUserDto;
+import com.innowise.userservice.dto.TokenValidationResponseDto;
 import com.innowise.userservice.dto.UpdateUserDto;
 import com.innowise.userservice.dto.UserDto;
+import com.innowise.userservice.feign.AuthClient;
+import com.innowise.userservice.httpfilter.JwtAuthFilter;
 import com.innowise.userservice.model.PageResponse;
 import com.innowise.userservice.model.User;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -35,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -54,11 +61,30 @@ class UserControllerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @MockitoBean
+    private AuthClient authClient;
+
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
+
     @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
     private CacheManager redisTemplate;
+
+    private static final String token = "Bearer asfdlkashjlfkasdlkas";
+
+    @BeforeEach
+    void setUpFeignClient() {
+        TokenValidationResponseDto dto = TokenValidationResponseDto.builder()
+                .role("ADMIN")
+                .valid(true)
+                .userId(null)
+                .build();
+
+        when(authClient.validate(any())).thenReturn(dto);
+    }
 
     private CreateUserDto getCreateUserDto() {
         LocalDate start = LocalDate.ofEpochDay(0L);
@@ -110,7 +136,8 @@ class UserControllerTest {
 
         Long id = userRepository.findAll().get(0).getId();
 
-        UserDto userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + id))
+        UserDto userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), UserDto.class);
 
@@ -120,6 +147,7 @@ class UserControllerTest {
         userRepository.deleteById(id);
 
         UserDto cachedUserDto = objectMapper.readValue(mockMvc.perform(get("/users/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), UserDto.class);
@@ -142,6 +170,7 @@ class UserControllerTest {
         updateUserDto.setName("Johny");
 
         UserDto updatedUserDto = objectMapper.readValue(mockMvc.perform(put("/users/" + userDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(updateUserDto)))
                 .andExpect(status().isOk())
@@ -168,7 +197,8 @@ class UserControllerTest {
 
         assertNotNull(user);
 
-        mockMvc.perform(delete("/users/" + userDto.getId()))
+        mockMvc.perform(delete("/users/" + userDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
         user = userRepository.findById(userDto.getId()).orElse(null);
@@ -185,14 +215,16 @@ class UserControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), UserDto.class);
 
-        mockMvc.perform(get("/users/" + userDto.getId()))
+        mockMvc.perform(get("/users/" + userDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk());
 
         UserDto cachedUser = (UserDto) redisTemplate.getCache("users").get(userDto.getId()).get();
 
         assertNotNull(cachedUser);
 
-        mockMvc.perform(delete("/users/" + userDto.getId()))
+        mockMvc.perform(delete("/users/" + userDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
         assertNull(redisTemplate.getCache("users").get(userDto.getId()));
@@ -222,12 +254,14 @@ class UserControllerTest {
 
 
         CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(card1)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
         CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(card2)))
                 .andExpect(status().isCreated())
@@ -236,7 +270,8 @@ class UserControllerTest {
         assertNotNull(cardDto1);
         assertNotNull(cardDto2);
 
-        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId() + "/cards"))
+        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId() + "/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), new TypeReference<>() {});
 
@@ -257,19 +292,23 @@ class UserControllerTest {
         assertNotNull(userDto);
         assertTrue(userDto.getActive());
 
-        mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate"))
+        mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate")
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
-        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
+        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), UserDto.class);
 
         assertFalse(userDto.getActive());
 
-        mockMvc.perform(patch("/users/" + userDto.getId() + "/activate"))
+        mockMvc.perform(patch("/users/" + userDto.getId() + "/activate")
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
-        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
+        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), UserDto.class);
 
@@ -289,10 +328,12 @@ class UserControllerTest {
         assertNotNull(userDto);
         assertTrue(userDto.getActive());
 
-        mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate"))
+        mockMvc.perform(patch("/users/" + userDto.getId() + "/deactivate")
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
-        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId()))
+        userDto = objectMapper.readValue(mockMvc.perform(get("/users/" + userDto.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), UserDto.class);
 
@@ -320,6 +361,7 @@ class UserControllerTest {
                 .constructParametricType(PageResponse.class, UserDto.class);
 
         PageResponse<UserDto> page = objectMapper.readValue(mockMvc.perform(get("/users")
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .param("name", name))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), type);
