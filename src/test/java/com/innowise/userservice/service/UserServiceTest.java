@@ -54,7 +54,7 @@ class UserServiceTest {
         user.setEmail("some" + id + "@email.com");
         user.setName("John");
         user.setSurname("Doe");
-        user.setBirthDate(LocalDate.of(1999, 1 , 1));
+        user.setBirthDate(LocalDate.of(1999, 1, 1));
         user.setId(id);
 
         return user;
@@ -70,7 +70,7 @@ class UserServiceTest {
 
         when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        Page<UserDto> result = userService.getAllBySpecification("John", null,0, 10, "name");
+        Page<UserDto> result = userService.getAllBySpecification("John", null, 0, 10, "name");
 
         assertNotNull(result);
         assertNotNull(result.getContent());

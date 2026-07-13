@@ -4,6 +4,7 @@ import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateUserDto;
 import com.innowise.userservice.dto.UpdateUserDto;
 import com.innowise.userservice.dto.UserDto;
+import com.innowise.userservice.dto.UserInfoDto;
 import com.innowise.userservice.service.CardService;
 import com.innowise.userservice.service.UserService;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/user-service/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
@@ -35,10 +37,10 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<UserDto>> getAllBySpecification(@RequestParam(required = false) String name,
-                                                @RequestParam(required = false) String surname,
-                                                @RequestParam(defaultValue = "0") int page,
-                                                @RequestParam(defaultValue = "10") int size,
-                                                @RequestParam(defaultValue = "name", required = false) String sortBy) {
+                                                               @RequestParam(required = false) String surname,
+                                                               @RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "10") int size,
+                                                               @RequestParam(defaultValue = "name", required = false) String sortBy) {
 
         return ResponseEntity.ok(userService.getAllBySpecification(name, surname, page, size, sortBy));
     }
@@ -48,7 +50,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveUser(createUserDto));
     }
 
-    @PreAuthorize("hasRole('ADMIN') || #userId == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') || #id == authentication.principal.id")
     @GetMapping("/{id}/cards")
     public ResponseEntity<List<CardDto>> getAllCardsByUserId(@PathVariable Long id) {
         return ResponseEntity.ok(cardService.getAllByUserId(id));
@@ -58,6 +60,13 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PreAuthorize("hasRole('ADMIN') || #principal.equals('internal-service') || authentication.principal.id == #id")
+    @GetMapping("/{id}/info")
+    public ResponseEntity<UserInfoDto> getUserInfoById(@PathVariable Long id,
+                                                       @AuthenticationPrincipal String principal) {
+        return ResponseEntity.ok(userService.getUserInfoById(id));
     }
 
     @PreAuthorize("hasRole('ADMIN') || #id == authentication.principal.id")
@@ -80,7 +89,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') || authentication.principal == 'internal-service'")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUserById(@PathVariable Long id) {
         userService.deleteUser(id);

@@ -1,5 +1,6 @@
 package com.innowise.userservice.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -11,10 +12,17 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TokenValidationResponseDto {
-    private boolean valid;
-    private Long userId;
-    @NotBlank
+public class UserInfoDto {
     @NotNull
-    private String role;
+    private Long id;
+    @Email
+    @NotNull
+    @NotBlank
+    private String email;
+    @NotNull
+    @NotBlank
+    private String name;
+    @NotNull
+    @NotBlank
+    private String surname;
 }

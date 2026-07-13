@@ -5,7 +5,7 @@ import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateCardDto;
 import com.innowise.userservice.dto.UpdateCardDto;
-import com.innowise.userservice.httpfilter.UserPrincipal;
+import com.innowise.userservice.security.UserPrincipal;
 import com.innowise.userservice.mapper.CardMapper;
 import com.innowise.userservice.model.Card;
 import com.innowise.userservice.model.User;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
- class CardServiceTest {
+class CardServiceTest {
     @Mock
     private CardRepository cardRepository;
 
@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
         card.setNumber("234355533213456" + id);
         card.setActive(true);
         card.setHolder("INSTANT CARD");
-        card.setExpirationDate(LocalDate.of(2027, 1,1));
+        card.setExpirationDate(LocalDate.of(2027, 1, 1));
 
         return card;
     }

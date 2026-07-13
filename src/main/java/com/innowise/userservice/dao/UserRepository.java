@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     @Query("SELECT u from User u LEFT JOIN FETCH u.cards WHERE u.id = :id")
     Optional<User> findById(@Param("id") Long id);
+
     @Query(nativeQuery = true, value = "select * from users as u where u.email = :email")
     Optional<User> findUserByEmail(@Param("email") String email);
 }

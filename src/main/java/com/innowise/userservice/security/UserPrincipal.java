@@ -1,4 +1,4 @@
-package com.innowise.userservice.httpfilter;
+package com.innowise.userservice.security;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,14 +1,14 @@
-package com.innowise.userservice.httpfilter;
+package com.innowise.userservice.security.filter;
 
 import com.innowise.userservice.dto.TokenValidationRequestDto;
 import com.innowise.userservice.dto.TokenValidationResponseDto;
 import com.innowise.userservice.feign.AuthClient;
+import com.innowise.userservice.security.UserPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,18 +31,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if(header == null || !header.startsWith("Bearer ")) {
+        if (header == null || !header.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = header.substring(7);
 
-        TokenValidationResponseDto validationResponse;
+        TokenValidationResponseDto validationResponse = authClient.validate(new TokenValidationRequestDto(token));
 
-        validationResponse = authClient.validate(new TokenValidationRequestDto(token));
-
-        if(validationResponse == null || !validationResponse.isValid()) {
+        if (validationResponse == null || !validationResponse.isValid() || validationResponse.getUserId() == null) {
             response.setStatus(HttpStatus.FORBIDDEN.value());
             return;
         }

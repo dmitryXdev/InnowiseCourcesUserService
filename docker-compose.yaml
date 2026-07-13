@@ -1,7 +1,7 @@
 services:
   user-service:
     build: .
-    container_name: user-service-container
+    container_name: user-service
     ports:
       - "8081:8081"
     environment:
@@ -19,12 +19,12 @@ services:
       - java-network
   redis:
     image: redis:7.2-alpine
-    container_name: redis
+    container_name: user-service-redis
     restart: always
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - users_redis_data:/data
     networks:
       - java-network
   postgres:
@@ -35,16 +35,16 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
     ports:
-      - "5433:5433"
+      - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pg_users_data:/var/lib/postgresql/data
     networks:
       - java-network
     restart: always
 
 volumes:
-  pgdata:
-  redis-data:
+  pg_users_data:
+  users_redis_data:
 
 networks:
   java-network:

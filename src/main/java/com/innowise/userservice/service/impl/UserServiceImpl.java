@@ -4,6 +4,7 @@ import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.dto.CreateUserDto;
 import com.innowise.userservice.dto.UpdateUserDto;
 import com.innowise.userservice.dto.UserDto;
+import com.innowise.userservice.dto.UserInfoDto;
 import com.innowise.userservice.exception.BadIncomeDataException;
 import com.innowise.userservice.exception.EntityNotFoundException;
 import com.innowise.userservice.mapper.UserMapper;
@@ -30,14 +31,14 @@ public class UserServiceImpl implements UserService {
     private static final String USER_NOT_FOUND_MESSAGE = "User not found";
 
     @Override
-    public Page<UserDto> getAllBySpecification(String name, String surname, int page, int size, String sortBy){
+    public Page<UserDto> getAllBySpecification(String name, String surname, int page, int size, String sortBy) {
         Specification<User> specification = null;
 
-        if(name != null) {
+        if (name != null) {
             specification = Specification.where(UserSpecification.hasName(name));
         }
-        if(surname != null) {
-            if(specification == null) {
+        if (surname != null) {
+            if (specification == null) {
                 specification = Specification.where(UserSpecification.hasSurname(surname));
             } else {
                 specification = specification.and(UserSpecification.hasSurname(surname));
@@ -53,7 +54,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDto saveUser(CreateUserDto createUserDto) {
         User user = userRepository.findUserByEmail(createUserDto.getEmail()).orElse(null);
-        if(user != null) {
+        if (user != null) {
             throw new BadIncomeDataException("User already exists");
         }
 
@@ -68,6 +69,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserInfoDto getUserInfoById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
+
+        return UserInfoDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .surname(user.getSurname())
+                .build();
+    }
+
+    @Override
     @Cacheable(value = "users", key = "#id")
     public UserDto getUserById(Long id) {
         return userMapper.toDto(userRepository.findById(id)
@@ -78,19 +92,19 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @CacheEvict(value = "users", key = "#id")
     public UserDto updateUserById(Long id, UpdateUserDto updateUserDto) {
-        if(updateUserDto == null) {
+        if (updateUserDto == null) {
             throw new BadIncomeDataException("No data presented");
         }
 
         User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
-        if(updateUserDto.getName() != null) {
+        if (updateUserDto.getName() != null) {
             user.setName(updateUserDto.getName());
         }
-        if(updateUserDto.getBirthDate() != null) {
+        if (updateUserDto.getBirthDate() != null) {
             user.setBirthDate(updateUserDto.getBirthDate());
         }
-        if(updateUserDto.getSurname() != null) {
+        if (updateUserDto.getSurname() != null) {
             user.setSurname(updateUserDto.getSurname());
         }
 

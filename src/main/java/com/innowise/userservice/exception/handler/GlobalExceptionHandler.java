@@ -4,7 +4,6 @@ import com.innowise.userservice.exception.AccessDeniedException;
 import com.innowise.userservice.exception.AccountIsNotActivatedException;
 import com.innowise.userservice.exception.BadIncomeDataException;
 import com.innowise.userservice.exception.EntityNotFoundException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,18 +11,16 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-@Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> internalServerError(Exception e){
-        log.error(e.getMessage());
+    public ResponseEntity<ErrorResponse> internalServerError(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .body(
                         ErrorResponse.builder()
-                        .message(e.getMessage())
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                        .build()
-        );
+                                .message(e.getMessage())
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .build()
+                );
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -53,9 +50,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN.value())
                 .body(
                         ErrorResponse.builder()
-                        .message(e.getMessage())
-                        .status(HttpStatus.FORBIDDEN.value())
-                        .build());
+                                .message(e.getMessage())
+                                .status(HttpStatus.FORBIDDEN.value())
+                                .build());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

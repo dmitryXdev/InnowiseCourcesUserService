@@ -3,7 +3,7 @@ package com.innowise.userservice.controller;
 import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateCardDto;
 import com.innowise.userservice.dto.UpdateCardDto;
-import com.innowise.userservice.httpfilter.UserPrincipal;
+import com.innowise.userservice.security.UserPrincipal;
 import com.innowise.userservice.service.CardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +22,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/cards")
+@RequestMapping("/user-service/cards")
 @RequiredArgsConstructor
 public class CardController {
     private final CardService cardService;
 
     @PostMapping
     public ResponseEntity<CardDto> createCard(@RequestBody @Valid CreateCardDto createCardDto,
-                                              @AuthenticationPrincipal UserPrincipal principal)  {
+                                              @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED).body(cardService.createCard(createCardDto, principal));
     }
 

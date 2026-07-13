@@ -10,7 +10,7 @@ import com.innowise.userservice.dto.CreateCardDto;
 import com.innowise.userservice.dto.TokenValidationResponseDto;
 import com.innowise.userservice.dto.UpdateCardDto;
 import com.innowise.userservice.feign.AuthClient;
-import com.innowise.userservice.httpfilter.JwtAuthFilter;
+import com.innowise.userservice.security.filter.JwtAuthFilter;
 import com.innowise.userservice.model.Card;
 import com.innowise.userservice.model.User;
 import org.junit.jupiter.api.AfterEach;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("test")
 @Import(TestConfig.class)
 @ExtendWith(MockitoExtension.class)
- class CardControllerTest {
+class CardControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
@@ -82,7 +82,7 @@ import static org.mockito.Mockito.when;
         TokenValidationResponseDto dto = TokenValidationResponseDto.builder()
                 .role("ADMIN")
                 .valid(true)
-                .userId(null)
+                .userId(0L)
                 .build();
 
         when(authClient.validate(any())).thenReturn(dto);
@@ -120,7 +120,7 @@ import static org.mockito.Mockito.when;
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
 
-        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
@@ -136,7 +136,7 @@ import static org.mockito.Mockito.when;
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
 
-        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
@@ -146,7 +146,7 @@ import static org.mockito.Mockito.when;
         assertNotNull(cardDto);
         assertEquals(createCardDto.getNumber(), cardDto.getNumber());
 
-        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId())
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/user-service/cards/" + cardDto.getId())
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
@@ -161,14 +161,14 @@ import static org.mockito.Mockito.when;
         CreateCardDto card1 = getCreateCardDto(user.getId(), "2342345342345435");
         CreateCardDto card2 = getCreateCardDto(user.getId(), "2342341231332132");
 
-        CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto1 = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(card1)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-        CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto2 = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(card2)))
@@ -178,10 +178,11 @@ import static org.mockito.Mockito.when;
         assertNotNull(cardDto1);
         assertNotNull(cardDto2);
 
-        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/users/" + user.getId() + "/cards")
+        List<CardDto> usersCards = objectMapper.readValue(mockMvc.perform(get("/user-service/users/" + user.getId() + "/cards")
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(), new TypeReference<>() {});
+                .andReturn().getResponse().getContentAsString(), new TypeReference<>() {
+        });
 
         assertNotNull(usersCards);
         assertEquals(2, usersCards.size());
@@ -192,7 +193,7 @@ import static org.mockito.Mockito.when;
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
-        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
@@ -202,7 +203,7 @@ import static org.mockito.Mockito.when;
         UpdateCardDto updateCardDto = new UpdateCardDto();
         updateCardDto.setNumber("2342345342345435");
 
-        cardDto = objectMapper.readValue(mockMvc.perform(put("/cards/" + cardDto.getId())
+        cardDto = objectMapper.readValue(mockMvc.perform(put("/user-service/cards/" + cardDto.getId())
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(updateCardDto)))
@@ -218,14 +219,14 @@ import static org.mockito.Mockito.when;
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
-        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-        mockMvc.perform(delete("/cards/" + cardDto.getId())
+        mockMvc.perform(delete("/user-service/cards/" + cardDto.getId())
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
@@ -239,7 +240,7 @@ import static org.mockito.Mockito.when;
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
-        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
@@ -251,11 +252,11 @@ import static org.mockito.Mockito.when;
         card.setActive(false);
         cardRepository.save(card);
 
-        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/activate")
+        mockMvc.perform(patch("/user-service/cards/" + cardDto.getId() + "/activate")
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
-        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId())
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/user-service/cards/" + cardDto.getId())
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
@@ -268,18 +269,18 @@ import static org.mockito.Mockito.when;
         User user = addUserToDB();
         CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342341231332132");
 
-        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/cards")
+        CardDto cardDto = objectMapper.readValue(mockMvc.perform(post("/user-service/cards")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createCardDto)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);
 
-        mockMvc.perform(patch("/cards/" + cardDto.getId() + "/deactivate")
+        mockMvc.perform(patch("/user-service/cards/" + cardDto.getId() + "/deactivate")
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isNoContent());
 
-        cardDto = objectMapper.readValue(mockMvc.perform(get("/cards/" + cardDto.getId())
+        cardDto = objectMapper.readValue(mockMvc.perform(get("/user-service/cards/" + cardDto.getId())
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), CardDto.class);

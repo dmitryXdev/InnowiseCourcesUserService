@@ -9,7 +9,7 @@ import com.innowise.userservice.exception.AccessDeniedException;
 import com.innowise.userservice.exception.AccountIsNotActivatedException;
 import com.innowise.userservice.exception.BadIncomeDataException;
 import com.innowise.userservice.exception.EntityNotFoundException;
-import com.innowise.userservice.httpfilter.UserPrincipal;
+import com.innowise.userservice.security.UserPrincipal;
 import com.innowise.userservice.mapper.CardMapper;
 import com.innowise.userservice.model.Card;
 import com.innowise.userservice.model.User;
@@ -38,15 +38,15 @@ public class CardServiceImpl implements CardService {
     public CardDto createCard(CreateCardDto createCardDto, UserPrincipal principal) {
         User user = userRepository.findById(createCardDto.getUserId()).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        if(!principal.getRole().equals("ADMIN") && !user.getId().equals(principal.getId())) {
+        if (!principal.getRole().equals("ADMIN") && !user.getId().equals(principal.getId())) {
             throw new AccessDeniedException("Forbidden");
         }
 
-        if(!user.isActive()) {
+        if (!user.isActive()) {
             throw new AccountIsNotActivatedException("User account is not activated");
         }
 
-        if(user.getCards() != null && user.getCards().size() >= 5) {
+        if (user.getCards() != null && user.getCards().size() >= 5) {
             throw new BadIncomeDataException("User can not have more than 5 cards");
         }
 
@@ -64,7 +64,7 @@ public class CardServiceImpl implements CardService {
     public CardDto getCardById(Long id, UserPrincipal principal) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
 
-        if(!principal.getRole().equals("ADMIN") && !card.getUser().getId().equals(principal.getId())) {
+        if (!principal.getRole().equals("ADMIN") && !card.getUser().getId().equals(principal.getId())) {
             throw new AccessDeniedException("Forbidden");
         }
 
@@ -87,11 +87,11 @@ public class CardServiceImpl implements CardService {
     public CardDto updateCardById(Long id, UpdateCardDto updateCardDto) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
 
-        if(updateCardDto.getNumber() != null) {
+        if (updateCardDto.getNumber() != null) {
             card.setNumber(updateCardDto.getNumber());
         }
 
-        if(updateCardDto.getExpirationDate() != null) {
+        if (updateCardDto.getExpirationDate() != null) {
             card.setExpirationDate(updateCardDto.getExpirationDate());
         }
 
@@ -103,7 +103,7 @@ public class CardServiceImpl implements CardService {
     public void deleteCard(Long id, UserPrincipal principal) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(CARD_NOT_FOUND_MESSAGE));
 
-        if(!principal.getRole().equals("ADMIN") && !card.getUser().getId().equals(principal.getId())) {
+        if (!principal.getRole().equals("ADMIN") && !card.getUser().getId().equals(principal.getId())) {
             throw new AccessDeniedException("Forbidden");
         }
 
