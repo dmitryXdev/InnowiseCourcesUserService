@@ -1,0 +1,52 @@
+services:
+  user-service:
+    build: .
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user-service-db
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SERVICES_AUTH_URL=http://auth-service:8080
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - java-network
+  redis:
+    image: redis:7.2-alpine
+    container_name: user-service-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - users_redis_data:/data
+    networks:
+      - java-network
+  postgres:
+    image: postgres:16-alpine
+    container_name: user-service-db
+    environment:
+      POSTGRES_DB: user-service-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_users_data:/var/lib/postgresql/data
+    networks:
+      - java-network
+    restart: always
+
+volumes:
+  pg_users_data:
+  users_redis_data:
+
+networks:
+  java-network:
+    name: java-network
+    driver: bridge
