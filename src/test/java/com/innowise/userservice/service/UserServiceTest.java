@@ -4,6 +4,9 @@ import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.dto.CreateUserDto;
 import com.innowise.userservice.dto.UpdateUserDto;
 import com.innowise.userservice.dto.UserDto;
+import com.innowise.userservice.dto.UserInfoDto;
+import com.innowise.userservice.exception.BadIncomeDataException;
+import com.innowise.userservice.exception.EntityNotFoundException;
 import com.innowise.userservice.mapper.UserMapper;
 import com.innowise.userservice.model.User;
 import com.innowise.userservice.service.impl.UserServiceImpl;
@@ -28,6 +31,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -101,6 +105,16 @@ class UserServiceTest {
     }
 
     @Test
+    void saveUser_shouldThrowExceptionOnUserAlreadyExists() {
+        when(userRepository.findUserByEmail(any(String.class))).thenReturn(Optional.of(new User()));
+
+        CreateUserDto createUserDto = new CreateUserDto();
+        createUserDto.setEmail("email");
+
+        assertThrows(BadIncomeDataException.class, () -> userService.saveUser(createUserDto));
+    }
+
+    @Test
     void getUserById_shouldReturnUserById() {
         User user = getUser(0L);
         when(userRepository.findById(0L)).thenReturn(Optional.of(user));
@@ -110,6 +124,24 @@ class UserServiceTest {
         verify(userRepository, times(1)).findById(any());
         assertNotNull(userDto);
         assertEquals(user.getName(), userDto.getName());
+    }
+
+    @Test
+    void getUserInfoById_shouldReturnUserInfoByUserId() {
+        User user = getUser(0L);
+
+        when(userRepository.findById(0L)).thenReturn(Optional.of(user));
+
+        UserInfoDto userInfoDto = userService.getUserInfoById(0L);
+        assertNotNull(userInfoDto);
+        assertEquals(user.getId(), userInfoDto.getId());
+    }
+
+    @Test
+    void getUserInfoById_shouldThrowExceptionOnNotExistingUser() {
+        when(userRepository.findById(0L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> userService.getUserInfoById(0L));
     }
 
     @Test

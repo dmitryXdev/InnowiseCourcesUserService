@@ -5,6 +5,9 @@ import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.dto.CardDto;
 import com.innowise.userservice.dto.CreateCardDto;
 import com.innowise.userservice.dto.UpdateCardDto;
+import com.innowise.userservice.exception.AccessDeniedException;
+import com.innowise.userservice.exception.AccountIsNotActivatedException;
+import com.innowise.userservice.exception.BadIncomeDataException;
 import com.innowise.userservice.security.UserPrincipal;
 import com.innowise.userservice.mapper.CardMapper;
 import com.innowise.userservice.model.Card;
@@ -26,6 +29,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -89,6 +93,49 @@ class CardServiceTest {
     }
 
     @Test
+    void createCard_shouldThrowExceptionOnNotActivatedUser() {
+        User user = new User();
+        user.setId(0L);
+        user.setActive(false);
+
+        UserPrincipal principal = new UserPrincipal(user.getId(), "ADMIN");
+
+        when(userRepository.findById(any())).thenReturn(Optional.of(user));
+
+        assertThrows(AccountIsNotActivatedException.class, () -> cardService.createCard(new CreateCardDto(), principal));
+    }
+
+    @Test
+    void createCard_shouldThrowExceptionOnAccessToForbiddenResource() {
+        User user = new User();
+        user.setId(0L);
+        user.setActive(false);
+
+        UserPrincipal principal = new UserPrincipal(1L, "USER");
+
+        when(userRepository.findById(any())).thenReturn(Optional.of(user));
+
+        CreateCardDto createCardDto = new CreateCardDto();
+        createCardDto.setUserId(0L);
+
+        assertThrows(AccessDeniedException.class, () -> cardService.createCard(createCardDto, principal));
+    }
+
+    @Test
+    void createCard_shouldThrowExceptionOnUserHave5Cards() {
+        User user = new User();
+        user.setId(0L);
+        user.setActive(true);
+        user.setCards(List.of(new Card(), new Card(), new Card(), new Card(), new Card()));
+
+        UserPrincipal principal = new UserPrincipal(user.getId(), "ADMIN");
+
+        when(userRepository.findById(any())).thenReturn(Optional.of(user));
+
+        assertThrows(BadIncomeDataException.class, () -> cardService.createCard(new CreateCardDto(), principal));
+    }
+
+    @Test
     void getCardById_shouldReturnCardById() {
         Card card = getCard(0L);
         when(cardRepository.findById(0L)).thenReturn(Optional.of(card));
@@ -103,6 +150,21 @@ class CardServiceTest {
 
         assertNotNull(cardDto);
         assertEquals(card.getNumber(), cardDto.getNumber());
+    }
+
+    @Test
+    void getCardById_shouldThrowExceptionOnAccessToForbiddenResource() {
+        UserPrincipal principal = new UserPrincipal(0L, "USER");
+
+        Card card = new Card();
+
+        User user = new User();
+        user.setId(1L);
+        card.setUser(user);
+
+        when(cardRepository.findById(any())).thenReturn(Optional.of(card));
+
+        assertThrows(AccessDeniedException.class, () -> cardService.getCardById(0L, principal));
     }
 
     @Test
@@ -133,11 +195,13 @@ class CardServiceTest {
 
         UpdateCardDto updateCardDto = new UpdateCardDto();
         updateCardDto.setNumber("2333555332134561");
+        updateCardDto.setExpirationDate(LocalDate.now());
 
         CardDto cardDto = cardService.updateCardById(card.getId(), updateCardDto);
 
         assertNotNull(cardDto);
         assertEquals(updateCardDto.getNumber(), cardDto.getNumber());
+        assertEquals(cardDto.getExpirationDate(), updateCardDto.getExpirationDate());
     }
 
     @Test

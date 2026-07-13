@@ -1,5 +1,6 @@
 package com.innowise.userservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -130,6 +131,21 @@ class UserControllerTest {
     }
 
     @Test
+    void saveUser_shouldThrowExceptionOnUserAlreadyExists() throws Exception {
+        CreateUserDto createUserDto = getCreateUserDto();
+
+        mockMvc.perform(post("/user-service/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/user-service/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createUserDto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void gertUserById_shouldCacheAndReturnUserById() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
 
@@ -161,6 +177,13 @@ class UserControllerTest {
     }
 
     @Test
+    void getUserById_shouldThrowExceptionOnNotExistingUser() throws Exception {
+        mockMvc.perform(get("/user-service/users/0")
+                        .header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void updateUser_shouldUpdateAndReturnUser() throws Exception {
         CreateUserDto createUserDto = getCreateUserDto();
 
@@ -172,6 +195,8 @@ class UserControllerTest {
 
         UpdateUserDto updateUserDto = new UpdateUserDto();
         updateUserDto.setName("Johny");
+        updateUserDto.setSurname("Surname");
+        updateUserDto.setBirthDate(LocalDate.now().minusDays(1L));
 
         UserDto updatedUserDto = objectMapper.readValue(mockMvc.perform(put("/user-service/users/" + userDto.getId())
                         .header(HttpHeaders.AUTHORIZATION, token)
@@ -183,8 +208,9 @@ class UserControllerTest {
         User user = userRepository.findById(userDto.getId()).orElse(null);
 
         assertNotNull(user);
-        assertEquals("Johny", user.getName());
-        assertEquals("Johny", updatedUserDto.getName());
+        assertEquals(user.getName(), updatedUserDto.getName());
+        assertEquals(user.getSurname(), updatedUserDto.getSurname());
+        assertEquals(user.getBirthDate(), updatedUserDto.getBirthDate());
     }
 
     @Test

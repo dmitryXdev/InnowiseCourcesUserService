@@ -1,5 +1,6 @@
 package com.innowise.userservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.userservice.config.TestConfig;
@@ -129,6 +130,47 @@ class CardControllerTest {
 
         assertNotNull(cardDto);
         assertEquals(createCardDto.getNumber(), cardDto.getNumber());
+    }
+
+    @Test
+    void createCard_shouldThrowExceptionOnAccessToForbiddenResource() throws Exception {
+        User user = addUserToDB();
+
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
+
+        TokenValidationResponseDto dto = TokenValidationResponseDto.builder()
+                .role("USER")
+                .valid(true)
+                .userId(10L)
+                .build();
+
+        when(authClient.validate(any())).thenReturn(dto);
+
+        mockMvc.perform(post("/user-service/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createUser_shouldThrowExceptionOnNotActivatedUser() throws Exception {
+        User user = new User();
+        user.setActive(false);
+        user.setSurname("surname");
+        user.setName("name");
+        user.setBirthDate(LocalDate.now().minusDays(1L));
+        user.setEmail("some@email.com");
+
+        userRepository.save(user);
+
+        CreateCardDto createCardDto = getCreateCardDto(user.getId(), "2342345342345435");
+
+        mockMvc.perform(post("/user-service/cards")
+                        .header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createCardDto)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

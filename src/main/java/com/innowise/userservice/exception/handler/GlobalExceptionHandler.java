@@ -25,11 +25,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> entityNotFound(EntityNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
                 .body(
                         ErrorResponse.builder()
                                 .message(e.getMessage())
-                                .status(HttpStatus.NOT_FOUND.value())
+                                .status(HttpStatus.BAD_REQUEST.value())
                                 .build()
                 );
     }
@@ -47,11 +47,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccountIsNotActivatedException.class)
     public ResponseEntity<ErrorResponse> accountIsNotActivated(AccountIsNotActivatedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN.value())
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
                 .body(
                         ErrorResponse.builder()
                                 .message(e.getMessage())
-                                .status(HttpStatus.FORBIDDEN.value())
+                                .status(HttpStatus.BAD_REQUEST.value())
                                 .build());
     }
 
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> badIncomeData(AccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
+        return ResponseEntity.status(HttpStatus.FORBIDDEN.value())
                 .body(
                         ErrorResponse.builder()
                                 .message(e.getMessage())
